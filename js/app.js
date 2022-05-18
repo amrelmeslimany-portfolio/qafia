@@ -1,5 +1,5 @@
 $(function () {
-  /* Html Temp */
+  const sideAdv = $(".side-adv");
   const lettersWrap = $(".beforelast-wrod .beforelast-wrod-content");
   const arabicLetters = [
     "أ",
@@ -35,7 +35,13 @@ $(function () {
   ];
   const underlineLetters = ["ج", "ح", "خ", "ع", "غ", "م"];
 
-  //
+  // Window resize
+  $(window).on("resize", () => {
+    // set hieght for adv
+    setADVHeight();
+  });
+
+  // Insert Letters to Body
   arabicLetters.forEach(function (letter) {
     if (underlineLetters.includes(letter))
       lettersWrap.append(
@@ -46,4 +52,16 @@ $(function () {
         `<span class="letter-badge badge"><span>${letter}</span></span>`
       );
   });
+
+  // Set height of adv
+  setADVHeight();
+  function setADVHeight() {
+    // Set Height of adv
+    $(".3double-height").each(function () {
+      let width = $(this).width();
+
+      $(this).height(`${width / 3}px`);
+    });
+    sideAdv.height(`${sideAdv.width() * 2}px`);
+  }
 });
