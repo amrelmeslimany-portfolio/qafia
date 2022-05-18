@@ -33,9 +33,17 @@ $(function () {
     "ة",
     "ء",
   ];
+  const underlineLetters = ["ج", "ح", "خ", "ع", "غ", "م"];
 
   //
   arabicLetters.forEach(function (letter) {
-    lettersWrap.append(`<span class="letter-badge badge">${letter}</span>`);
+    if (underlineLetters.includes(letter))
+      lettersWrap.append(
+        `<span class="letter-badge badge"><span class="underline-letter">${letter}</span></span>`
+      );
+    else
+      lettersWrap.append(
+        `<span class="letter-badge badge"><span>${letter}</span></span>`
+      );
   });
 });
