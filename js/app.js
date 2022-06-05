@@ -12,7 +12,7 @@ $(function () {
   const changeWordsBTN = $(".changewords-btn");
   const copyWordsBTN = $(".copywords-btn");
   const wordMeaningLink = $(".wordmean-link");
-  const removeSelectionWrap = $(".removeselected-wrap");
+  const removeSelectionWrap = $(".removeselected-wrap button");
   const selectedIDsWords = new Set();
   const copyWords = new Set();
 
@@ -134,10 +134,11 @@ $(function () {
           handelGetRequest(url);
         } else if (valueLength > 1) {
           let lastLetter = value.charAt(valueLength - 1);
-          let beforeLastLetter = value.charAt(valueLength - 2);
-          const url = `${BackEndURL}search?count=${valueLength}&last=${handleLetter(
-            lastLetter
-          )}&b_last=${handleLetter(beforeLastLetter)}`;
+          // let beforeLastLetter = value.charAt(valueLength - 2);
+          // const url = `${BackEndURL}search?count=${valueLength}&last=${handleLetter(
+          //   lastLetter
+          // )}&b_last=${handleLetter(beforeLastLetter)}`;
+          const url = `${BackEndURL}search?last=${handleLetter(lastLetter)}`;
           lastLetterConstant = handleLetter(lastLetter);
           handelGetRequest(url);
         }
@@ -449,18 +450,17 @@ $(function () {
             )}`
           );
 
-          removeSelectionWrap.html(
-            `<button class="btn bg-primary text-white">مسح التحديد</button>`
-          );
+          copyWordsBTN.attr("disabled", false);
+          wordMeaningLink.removeClass("disabled");
+          removeSelectionWrap.attr("disabled", false);
 
-          removeSelectionWrap.find("button").click(function () {
+          removeSelectionWrap.click(function () {
             initActions();
             $(".word-badge").removeClass("selected");
           });
         } else {
           smallTag.text("");
-          wordMeaningLink.attr(`href`, `word.html`);
-          removeSelectionWrap.html("");
+          initActions();
         }
       });
     });
@@ -470,7 +470,9 @@ $(function () {
     selectedIDsWords.clear();
     copyWords.clear();
     copyWordsBTN.find("small").text("");
+    copyWordsBTN.attr("disabled", true);
     wordMeaningLink.attr(`href`, `word.html`);
-    removeSelectionWrap.html("");
+    wordMeaningLink.addClass("disabled");
+    removeSelectionWrap.attr("disabled", true);
   }
 });
