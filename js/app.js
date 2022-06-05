@@ -12,6 +12,7 @@ $(function () {
   const changeWordsBTN = $(".changewords-btn");
   const copyWordsBTN = $(".copywords-btn");
   const wordMeaningLink = $(".wordmean-link");
+  const removeSelectionWrap = $(".removeselected-wrap");
   const selectedIDsWords = new Set();
   const copyWords = new Set();
 
@@ -20,6 +21,12 @@ $(function () {
 
   const sideAdv = $(".side-adv");
   const lettersWrap = $(".beforelast-wrod .beforelast-wrod-content");
+  const messagesBeforeLastLetter = {
+    error: $(".letterbefore-error"),
+    success: $(".letterbefore-success"),
+  };
+  const bfLLetterLoader = $(".bflastletter-loader");
+
   const arabicLetters = [
     "أ",
     "ب",
@@ -94,18 +101,15 @@ $(function () {
         );
     });
 
-    $(".letter-badge").click(function () {
-      let letter = $(this).text().trim();
-
-      console.log(letter);
-    });
+    bfLLetterLoader.hide();
   }
 
   // ! Handle Data From Database and backend
   if (bestwordsContent.length) {
-    let { results, isLoading } = {
+    let { results, isLoading, lastLetterConstant } = {
       results: [], // success or error
       isLoading: true,
+      lastLetterConstant: "",
     };
     let sliceCounter = {
       old: 0,
@@ -126,6 +130,7 @@ $(function () {
         // if user  enter letter
         if (valueLength == 1) {
           const url = `${BackEndURL}letter/${handleLetter(value)}`;
+          lastLetterConstant = handleLetter(value);
           handelGetRequest(url);
         } else if (valueLength > 1) {
           let lastLetter = value.charAt(valueLength - 1);
@@ -133,14 +138,15 @@ $(function () {
           const url = `${BackEndURL}search?count=${valueLength}&last=${handleLetter(
             lastLetter
           )}&b_last=${handleLetter(beforeLastLetter)}`;
-
+          lastLetterConstant = handleLetter(lastLetter);
           handelGetRequest(url);
         }
+        messagesBeforeLastLetter.error.hide();
       }
     });
 
     // Handle Get Request
-    function handelGetRequest(url) {
+    function handelGetRequest(url, messageElement = messages, isInput = true) {
       duringSearching((isLoading = true));
       // GET request
       axios
@@ -151,7 +157,8 @@ $(function () {
           if (results.length) {
             // init
             initActions();
-            inputLastLetter.val("");
+
+            isInput && inputLastLetter.val("");
             // init slice counter
             sliceCounter.old = 0;
             sliceCounter.new = 42;
@@ -159,17 +166,22 @@ $(function () {
             handleResults(results, sliceCounter);
             handleMessage(
               `تم ايجاد <b>${results.length}</b> كلمة بنجاح`,
-              "success"
+              "success",
+              messageElement
             );
             scrollAfterFinished();
           } else {
             duringSearching((isLoading = false));
-            handleMessage("لايوجد كلمات ");
+            handleMessage("لايوجد كلمات ", "error", messageElement);
           }
         })
         .catch((error) => {
           duringSearching((isLoading = false));
-          handleMessage("هناك خطأ فى الانترنت او السيرفر");
+          handleMessage(
+            "هناك خطأ فى الانترنت او السيرفر",
+            "error",
+            messageElement
+          );
         });
     }
 
@@ -210,6 +222,26 @@ $(function () {
           .catch((error) => {
             console.log(error);
           });
+      }
+    });
+
+    // Search by using letter before the last
+    $(".letter-badge").click(function () {
+      let letter = $(this).text().trim();
+
+      if (!lastLetterConstant) {
+        handleMessage(
+          "يجب ان تبحث عن أخر حرف (الروي) اولا",
+          "error",
+          messagesBeforeLastLetter
+        );
+        return;
+      } else {
+        const url = `${BackEndURL}search?last=${lastLetterConstant}&b_last=${handleLetter(
+          letter
+        )}`;
+
+        handelGetRequest(url, messagesBeforeLastLetter, false);
       }
     });
   }
@@ -265,25 +297,27 @@ $(function () {
       icon.addClass("fa-spinner");
       icon.addClass("fa-spin");
       loader.removeClass("d-none");
+      bfLLetterLoader.show();
     } else {
       searchBTN.attr("disabled", false);
       icon.addClass("fa-search");
       icon.removeClass("fa-spinner");
       icon.removeClass("fa-spin");
       loader.addClass("d-none");
+      bfLLetterLoader.hide();
     }
   }
 
   // Handle Messages (Success , Error)
-  function handleMessage(message, type = "error") {
+  function handleMessage(message, type = "error", element = messages) {
     if (type == "error") {
-      messages.error.html(message);
-      messages.error.show();
-      messages.success.hide();
+      element.error.html(message);
+      element.error.show();
+      element.success.hide();
     } else {
-      messages.success.html(message);
-      messages.success.show();
-      messages.error.hide();
+      element.success.html(message);
+      element.success.show();
+      element.error.hide();
     }
   }
 
@@ -346,7 +380,7 @@ $(function () {
       $(this).remove();
     });
 
-    bestwordsContent.html(loopWords(slicedData, insertedHTMLData));
+    loader.after(loopWords(slicedData, insertedHTMLData));
 
     wordActions($(".word-badge"));
 
@@ -391,6 +425,7 @@ $(function () {
         let id = Number($(this).data("id"));
         let text = $(this).text();
         let smallTag = copyWordsBTN.find("small");
+
         // When user remove select
         if ($(this).hasClass("selected")) {
           $(this).removeClass("selected");
@@ -413,9 +448,19 @@ $(function () {
               [...selectedIDsWords].join(",")
             )}`
           );
+
+          removeSelectionWrap.html(
+            `<button class="btn bg-primary text-white">مسح التحديد</button>`
+          );
+
+          removeSelectionWrap.find("button").click(function () {
+            initActions();
+            $(".word-badge").removeClass("selected");
+          });
         } else {
           smallTag.text("");
           wordMeaningLink.attr(`href`, `word.html`);
+          removeSelectionWrap.html("");
         }
       });
     });
@@ -426,5 +471,6 @@ $(function () {
     copyWords.clear();
     copyWordsBTN.find("small").text("");
     wordMeaningLink.attr(`href`, `word.html`);
+    removeSelectionWrap.html("");
   }
 });

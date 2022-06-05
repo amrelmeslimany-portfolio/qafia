@@ -84,7 +84,8 @@
         <div class="row g-5">
           <!-- Best Words -->
           <div class="col-lg">
-            <div class="bestwords bg-light-gray rounded-12px overflow-hidden h-100">
+            <!-- h-100 -->
+            <div class="bestwords bg-light-gray rounded-12px overflow-hidden ">
               <article class="bestwords-header text-center text-white p-5 bg-primary">
                 <h3 class="mb-0 ff-tharwat"> الأ كثر تفضيلاً</h3>
               </article>
@@ -126,28 +127,14 @@
               <div class="text-center otherwords-number">
                 <!-- Comes From JS -->
               </div>
-            </div>
-
-          </div>
-          <!-- Letters -->
-          <div class="col-lg-auto">
-            <div class="beforelast-wrod w-400 bg-light-gray rounded-12px  overflow-hidden">
-              <article class="beforelast-wrod-header text-center text-white p-5 bg-primary">
-                <h3 class="mb-0 ff-tharwat">الحرف قبل الأخير (الوصل)</h3>
-              </article>
-              <div class="beforelast-wrod-content p-5">
-                <!-- Here Letters comes from js -->
+              <div class="text-center removeselected-wrap mt-2 mb-3">
+                <!-- Comes From js -->
               </div>
             </div>
-          </div>
 
-        </div>
-
-        <div class="row g-5">
-          <div class="col-lg">
             <!-- Buttons -->
             <ul
-              class="buttons-list d-flex gap-sm-5 gap-2 mb-5 list-unstyled mb-0 bg-light-gray p-5 border-gray border rounded-12px">
+              class="buttons-list d-flex gap-sm-5 gap-2 mt-5 list-unstyled mb-0 bg-light-gray p-5 border-gray border rounded-12px">
               <li class="flex-grow-1 text-center">
                 <button class="btn btn-primary w-100 py-3 rounded-12px copywords-btn" type="button"> <span>نسخ
                     المحدد</span> <small class="display-sm d-inline-block align-middle"></small></button>
@@ -161,6 +148,31 @@
                   الكلمة</a>
               </li>
             </ul>
+
+          </div>
+          <!-- Letters -->
+          <div class="col-lg-auto">
+            <div class="beforelast-wrod w-400 bg-light-gray rounded-12px  overflow-hidden position-relative">
+              <article class="beforelast-wrod-header text-center text-white p-5 bg-primary">
+                <h3 class="mb-0 ff-tharwat">الحرف قبل الأخير (الوصل)</h3>
+              </article>
+              <div class="invalid-feedback  text-center mt-3 letterbefore-error"></div>
+              <div class="valid-feedback  text-center mt-3 letterbefore-success"></div>
+              <div class="beforelast-wrod-content p-5">
+                <!-- Here Letters comes from js -->
+              </div>
+              <!-- loader -->
+              <div class="bg-light-gray position-absolute top-0 end-0 text-center w-100 h-100 bflastletter-loader">
+                <img src="../assets/img/global/filterLoader.svg" class="mt-5" alt="loader">
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="row g-5">
+          <div class="col-lg">
+
             <!-- Send Comment -->
             <div class="comment-wrap bg-light-gray rounded-12px  overflow-hidden">
               <article class="comment-header text-dark p-5  d-flex gap-3 align-items-center">
