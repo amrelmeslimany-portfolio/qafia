@@ -16,6 +16,9 @@ $(function () {
   const selectedIDsWords = new Set();
   const copyWords = new Set();
 
+  // Wisedom Today
+  const wisedomContent = $(".wisedom-content");
+
   // Word Meaning page
   const wordmeaningBox = $(".wordmean");
 
@@ -62,7 +65,7 @@ $(function () {
   const underlineLetters = ["ج", "ح", "خ", "ع", "غ", "م"];
 
   // Database Ajax variables
-  const BackEndURL = "https://qafia.deta.dev/";
+  const BackEndURL = "https://jkt3ay.deta.dev/"; // old: https://qafia.deta.dev/
 
   // Articles Section
   const bestArticles = $(".bestArticles .article-item");
@@ -115,6 +118,28 @@ $(function () {
       old: 0,
       new: 42,
     };
+
+    // Default Words
+    duringSearching((isLoading = true));
+    axios
+      .get(`${BackEndURL}mostliked`)
+      .then(({ data }) => {
+        results = data.results;
+
+        if (results.length) {
+          // init
+          initActions();
+          duringSearching((isLoading = false));
+          handleResults(results, sliceCounter);
+        } else {
+          duringSearching((isLoading = false));
+          console.log("لايوجد كلمات");
+        }
+      })
+      .catch((error) => {
+        duringSearching((isLoading = false));
+        console.log(error.message);
+      });
 
     // When search input last word changing
     searchBTN.click(function (event) {
@@ -208,6 +233,7 @@ $(function () {
         let button = $(this);
         let copyWordsText = [...copyWords].join(" / ");
         let spanTag = button.find("span");
+        let convertedIDs = [...selectedIDsWords].join(" ");
 
         /* Copy the text inside the text field */
         navigator.clipboard
@@ -215,6 +241,22 @@ $(function () {
           .then((result) => {
             spanTag.text("تم النسخ!");
             button.addClass("bg-success");
+
+            // Get Request
+
+            button.attr("disabled", true);
+            axios
+              .get(`${BackEndURL}copy?ids=${convertedIDs}`)
+              .then(({ data }) => {
+                isCopyBTNClickd = true;
+                button.attr("disabled", false);
+                console.log(data);
+              })
+              .catch((error) => {
+                console.log(error.message);
+              });
+
+            // Show successfull message
             setTimeout(() => {
               button.removeClass("bg-success");
               spanTag.text("نسخ المحدد");
@@ -247,15 +289,170 @@ $(function () {
     });
   }
 
+  // Wisedom Get
+  if (wisedomContent.length) {
+    const bodyTag = wisedomContent.find(".wise-body");
+    const nameTag = wisedomContent.find(".wise-name");
+
+    axios
+      .get(`${BackEndURL}quote`)
+      .then(({ data = [] }) => {
+        if (data.length) {
+          bodyTag.html(data[1]); // Body
+          nameTag.html(data[0]); // Name
+        } else {
+          console.log("لا يوجد حكمه");
+        }
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  }
+
   // Word meaning page
   if (wordmeaningBox.length) {
     const params = new URLSearchParams(location.search);
     let wordID = "wordid";
     let data = params.get(wordID);
+    let wordWrapSection = wordmeaningBox.find(".wrapBox");
 
     if (params.has(wordID) && params.get(wordID) != "NaN") {
-      let IDs = data.split(",");
-      console.log(IDs);
+      let IDs = data;
+
+      axios.get(`${BackEndURL}meaning?ids=${IDs}`).then(({ data }) => {
+        let result = data.results;
+
+        if (typeof result != "string") {
+          if (result.length == 1) {
+            let item = Object.entries(JSON.parse(result[0][1]));
+            let theWord = result[0][0];
+
+            if (item.length == 0) {
+              wordWrapSection.html(
+                `
+                <h2 class="mb-5 text-black bigTitle">معني كلمة <b>${theWord}</b>:</h2>
+                <p>غير متوفر معني لهذة الكلمة</p>
+                    `
+              );
+              return;
+            }
+
+            // Insert Title
+            wordWrapSection.html(
+              `
+              <h2 class="mb-5 text-black bigTitle">معني كلمة <b>${theWord}</b>:</h2>
+              <article class="backlinkswrap">
+                  <h4>معني كلمة <b>${theWord}</b> حسب:</h4>
+                  <ul class="backlinks">
+  
+                  </ul>
+                  <hr class="mb-4"/>
+                  </article>
+                  `
+            );
+
+            for (const [dictionary, themeaning] of item) {
+              let idAttr = createID(dictionary, theWord);
+              let content = "";
+
+              themeaning.forEach((mean) => {
+                content += handleMeaningParagraphs(mean);
+              });
+
+              let htmlLinks = `  <li>
+              <a href="#${idAttr}" class="btn-link text-info fw-bold">${dictionary}</a>
+              </li>`;
+
+              let articleContent = `
+              <article id="${idAttr}" class="meaning-article">
+                                <h4>${dictionary}</h4>
+                                ${content}
+                            </article>`;
+
+              wordWrapSection.find(".backlinks").prepend(htmlLinks);
+              wordWrapSection.find(".backlinkswrap").after(articleContent);
+            }
+          } else if (result.length > 1) {
+            let articleContent = "";
+            let lastIItem = result.length - 1;
+            // Insert Title
+            wordWrapSection.html(
+              `
+              <h2 class="mb-5 text-black bigTitle">معني الكلمات:</h2>
+              `
+            );
+            result.forEach((meanItem, index) => {
+              let item = Object.entries(JSON.parse(meanItem[1]));
+              let theWord = `'${meanItem[0]}'`;
+              let content = "";
+
+              let hr = (last) => {
+                if (last) {
+                  return index == lastIItem ? `<hr class="mb-4"/>` : "";
+                } else {
+                  return index == lastIItem ? "" : `<hr class="mb-4"/>`;
+                }
+              };
+
+              // Subheader
+
+              if (item.length == 0) {
+                articleContent += ``;
+                wordWrapSection.append(`
+                  <article class="backlinkswrap${index}">
+                  <h4>معني كلمة <b>${theWord}</b> حسب:</h4>
+                  <p>غير متوفر معني لهذة الكلمة</p>
+                  ${hr(true)}
+                  </article>
+            `);
+              } else {
+                articleContent += `<h4 class="mb-4">كلمه ${theWord}:</h4>`;
+                wordWrapSection.append(`
+                <article class="backlinkswrap${index}">
+                <h4>معني كلمة <b>${theWord}</b> حسب:</h4>
+                <ul class="backlinks${index}">
+
+                </ul>
+                ${hr(true)}
+                </article>
+          `);
+
+                for (const [dictionary, themeaning] of item) {
+                  let idAttr = createID(dictionary, theWord);
+
+                  themeaning.forEach((mean) => {
+                    content += handleMeaningParagraphs(mean);
+                  });
+
+                  let htmlLinks = `<li>
+            <a href="#${idAttr}" class="btn-link text-info fw-bold">${dictionary}</a>
+            </li>`;
+
+                  articleContent += `
+            <article id="${idAttr}" class="meaning-article">
+                <h5 class="fs-21px">${dictionary}</h5>
+                ${content}
+            </article>`;
+
+                  wordWrapSection.find(`.backlinks${index}`).append(htmlLinks);
+                }
+
+                articleContent += hr(false);
+              }
+            });
+
+            $(`.backlinkswrap${lastIItem}`).after(articleContent);
+          }
+        } else {
+          wordWrapSection.html(
+            `<p class="text-center mb-0">من فضلك حدد كلمات <a href="index.html" class="text-info">من هنا</a></p>`
+          );
+        }
+      });
+    } else {
+      wordWrapSection.html(
+        `<p class="text-center mb-0">من فضلك حدد كلمات <a href="index.html" class="text-info">من هنا</a></p>`
+      );
     }
   }
   // ReUsed Functions
@@ -335,10 +532,10 @@ $(function () {
   }
 
   // Word html
-  function wordHTML(word, beforelastLetter, id, isSelect) {
+  function wordHTML(word, id, isSelect) {
     return `<span class="word-badge badge display-xomd text-dark px-5 ${
       isSelect ? "selected" : ""
-    }" data-id="${id}"  data-beforelastletter="${beforelastLetter}">${word}</span>`;
+    }" data-id="${id}"  >${word}</span>`;
   }
 
   // Handle Data and prepare to insert to html
@@ -407,12 +604,7 @@ $(function () {
   // Loop words and orgonize html word code
   function loopWords(data, htmlItem) {
     data.forEach((word) => {
-      htmlItem += wordHTML(
-        word[1],
-        word[3],
-        word[0],
-        selectedIDsWords.has(word[0])
-      );
+      htmlItem += wordHTML(word[0], word[1], selectedIDsWords.has(word[1]));
     });
 
     return htmlItem;
@@ -446,7 +638,7 @@ $(function () {
           wordMeaningLink.attr(
             `href`,
             `word.html?wordid=${encodeURIComponent(
-              [...selectedIDsWords].join(",")
+              [...selectedIDsWords].join(" ")
             )}`
           );
 
@@ -474,5 +666,24 @@ $(function () {
     wordMeaningLink.attr(`href`, `word.html`);
     wordMeaningLink.addClass("disabled");
     removeSelectionWrap.attr("disabled", true);
+  }
+
+  // Meaning page
+  function handleMeaningParagraphs(meaning) {
+    let item = Object.entries(meaning);
+    let html = "";
+
+    for (const [word, mean] of item) {
+      html += `<p class="lead fw-normal display-omd">
+      <strong>${word}</strong>
+      ${mean}
+      </p>`;
+    }
+
+    return html;
+  }
+
+  function createID(dictionary, word) {
+    return `${dictionary.replace(/\s/g, "")}-${word}`;
   }
 });
