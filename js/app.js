@@ -429,10 +429,11 @@ $(function () {
             </li>`;
 
                   articleContent += `
-            <article id="${idAttr}" class="meaning-article">
-                <h5 class="fs-21px">${dictionary}</h5>
-                ${content}
-            </article>`;
+                  <article id="${idAttr}" class="meaning-article">
+                      <h5 class="fs-21px fw-bold">${dictionary}</h5>
+                      ${content}
+                  </article>
+            `;
 
                   wordWrapSection.find(`.backlinks${index}`).append(htmlLinks);
                 }
