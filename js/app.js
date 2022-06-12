@@ -69,15 +69,20 @@ $(function () {
 
   // Articles Section
   const bestArticles = $(".bestArticles .article-item");
+  const width3Height = $(".w3h");
 
   // Window resize
   $(window).on("resize", () => {
     // set hieght for adv
     setADVHeight();
+    // Set article img cover
+    setArticleCoverHeight();
   });
 
   // Set height of adv
   setADVHeight();
+  // Set article img cover
+  setArticleCoverHeight();
 
   // Truncate Article title and Desc
   if (bestArticles.length) {
@@ -466,6 +471,13 @@ $(function () {
         $(this).height(`${width / 3}px`);
       });
       sideAdv.height(`${sideAdv.width() * 2}px`);
+    }
+  }
+
+  function setArticleCoverHeight() {
+    if (width3Height.length) {
+      let height3 = width3Height.width() / 3;
+      width3Height.height(height3 + "px");
     }
   }
 
