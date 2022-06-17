@@ -68,7 +68,6 @@ $(function () {
   const articleItemSection = $(".articleitem-section");
 
   // Database Ajax variables
-
   const ARTICLES_URL = "/qafia/js/libs/articles.json";
   const BackEndURL = "https://jkt3ay.deta.dev/"; // old: https://qafia.deta.dev/
 
