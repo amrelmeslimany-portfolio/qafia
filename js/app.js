@@ -64,11 +64,15 @@ $(function () {
   ];
   const underlineLetters = ["ج", "ح", "خ", "ع", "غ", "م"];
 
+  // One Article Item Page
+  const articleItemSection = $(".articleitem-section");
+
   // Database Ajax variables
+  const ARTICLES_URL = "/js/libs/articles.json";
   const BackEndURL = "https://jkt3ay.deta.dev/"; // old: https://qafia.deta.dev/
 
   // Articles Section
-  const bestArticles = $(".bestArticles .article-item");
+  const bestArticlesWrap = $(".bestArticles ");
   const width3Height = $(".w3h");
 
   // Window resize
@@ -85,14 +89,51 @@ $(function () {
   setArticleCoverHeight();
 
   // Truncate Article title and Desc
-  if (bestArticles.length) {
-    bestArticles.each(function () {
-      let title = $(this).find(".article-title");
-      let desc = $(this).find(".article-desc");
-
-      truncate(title, 60);
-      truncate(desc, 600);
+  if (bestArticlesWrap.length) {
+    const bestArticlesContent = $(".bestArticles-content");
+    axios.get(ARTICLES_URL).then(({ data }) => {
+      const articles = data[0].articles;
+      if (articles.length) {
+        articles.forEach((article) => {
+          bestArticlesContent.append(articleItemHTML(article));
+        });
+      } else {
+        bestArticlesContent.html(`<li class="text-center">لا يوجد مقالات</li>`);
+      }
     });
+  }
+
+  // One Article Page
+  if (articleItemSection.length) {
+    const loader = $("#loader-article");
+    const params = new URLSearchParams(location.search);
+    const id = Number(params.get("articleid")) || null;
+    loader.hide();
+    if (id) {
+      loader.show();
+      axios.get(ARTICLES_URL).then(({ data }) => {
+        const article =
+          data[0].articles?.find(({ article_id }) => article_id === id) || null;
+        loader.hide();
+        if (article) {
+          const { article_title, article_cover, article_body } = article;
+          articleItemSection.html(`
+
+          <h2 class="text-primary">
+          ${article_title}
+          </h2>
+
+          <div class="article-img-cover overflow-hidden rounded-12px  my-5 w3h">
+              <img src="${article_cover}" alt="${article_title} qafia قافيه"
+                  class=" w-100 h-100  img-cover">
+          </div>
+
+          ${article_body}
+          
+          `);
+        }
+      });
+    }
   }
 
   // Home Page
@@ -461,6 +502,7 @@ $(function () {
       );
     }
   }
+
   // ReUsed Functions
   function setADVHeight() {
     // Set Height of adv
@@ -482,8 +524,9 @@ $(function () {
   }
 
   function truncate(text, sliceNumber) {
-    text.text().trim().length > sliceNumber &&
-      text.text(text.text().trim().substring(0, sliceNumber) + "...");
+    return text.trim().length > sliceNumber
+      ? text.trim().substring(0, sliceNumber) + "..."
+      : text;
   }
 
   // Scroll To words after search finished
@@ -698,5 +741,45 @@ $(function () {
 
   function createID(dictionary, word) {
     return `${dictionary.replace(/\s/g, "")}-${word}`;
+  }
+
+  // Articles Page
+  function articleItemHTML({
+    article_id,
+    article_title,
+    article_cover,
+    article_body,
+  }) {
+    return `
+
+    <li class="article-item">
+        <div
+            class="article-wraper d-flex rounded-12px p-5 gap-5 bg-light-gray border border-gray ">
+            <div class="flex-shrink-0 article-thumimg">
+                <img src="${article_cover}"
+                    class="img-cover rounded-12px" alt="${article_title}">
+            </div>
+            <section class="flex-grow-1 d-flex flex-column ">
+                <article class="article-info">
+                    <h4 class=" text-black article-title">
+                        ${truncate(article_title, 60)}
+                    </h4>
+                    <p class="article-desc my-3">
+                          ${truncate(article_body, 500).replace(
+                            /<\/?[^>]+(>|$)/g,
+                            ""
+                          )}
+                    </p>
+                </article>
+
+                <a href="article.html?articleid=${article_id}"
+                    class="btn btn-primary mt-auto rounded-12px fw-bold w-100 py-2 morebtn">اقرأ
+                    المزيد</a>
+            </section>
+        </div>
+    </li>
+    
+    
+    `;
   }
 });
