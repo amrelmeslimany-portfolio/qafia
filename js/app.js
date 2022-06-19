@@ -67,13 +67,13 @@ $(function () {
   // One Article Item Page
   const articleItemSection = $(".articleitem-section");
 
-  // Database Ajax variables
-  const ARTICLES_URL = "/qafia/js/libs/articles.json";
-  const BackEndURL = "https://jkt3ay.deta.dev/"; // old: https://qafia.deta.dev/
-
   // Articles Section
   const bestArticlesWrap = $(".bestArticles ");
   const width3Height = $(".w3h");
+
+  // Database Ajax variables
+  const ARTICLES_URL = "/qafia/js/libs/articles.json"; // on Github : /qafia/js/libs/articles.json
+  const BackEndURL = "https://jkt3ay.deta.dev/"; // old: https://qafia.deta.dev/
 
   // Window resize
   $(window).on("resize", () => {
@@ -91,16 +91,26 @@ $(function () {
   // Truncate Article title and Desc
   if (bestArticlesWrap.length) {
     const bestArticlesContent = $(".bestArticles-content");
-    axios.get(ARTICLES_URL).then(({ data }) => {
-      const articles = data[0].articles;
-      if (articles.length) {
-        articles.forEach((article) => {
-          bestArticlesContent.append(articleItemHTML(article));
-        });
-      } else {
-        bestArticlesContent.html(`<li class="text-center">لا يوجد مقالات</li>`);
-      }
-    });
+
+    axios
+      .get(ARTICLES_URL)
+      .then(({ data }) => {
+        const articles = data[0].articles;
+        if (articles.length) {
+          articles.forEach((article) => {
+            bestArticlesContent.append(articleItemHTML(article));
+          });
+        } else {
+          bestArticlesContent.html(
+            `<li class="text-center">لا يوجد مقالات</li>`
+          );
+        }
+      })
+      .catch((error) => {
+        bestArticlesContent.html(
+          `<li class="text-center">هناك مشكله فى اظهار المقالات</li>`
+        );
+      });
   }
 
   // One Article Page
@@ -111,13 +121,16 @@ $(function () {
     loader.hide();
     if (id) {
       loader.show();
-      axios.get(ARTICLES_URL).then(({ data }) => {
-        const article =
-          data[0].articles?.find(({ article_id }) => article_id === id) || null;
-        loader.hide();
-        if (article) {
-          const { article_title, article_cover, article_body } = article;
-          articleItemSection.html(`
+      axios
+        .get(ARTICLES_URL)
+        .then(({ data }) => {
+          const article =
+            data[0].articles?.find(({ article_id }) => article_id === id) ||
+            null;
+          loader.hide();
+          if (article) {
+            const { article_title, article_cover, article_body } = article;
+            articleItemSection.html(`
 
           <h2 class="text-primary">
           ${article_title}
@@ -131,8 +144,11 @@ $(function () {
           ${article_body}
           
           `);
-        }
-      });
+          }
+        })
+        .catch((error) => {
+          loader.hide();
+        });
     }
   }
 
@@ -750,20 +766,24 @@ $(function () {
     article_cover,
     article_body,
   }) {
+    let href = `article.html?articleid=${article_id}`;
     return `
 
     <li class="article-item">
         <div
             class="article-wraper d-flex rounded-12px p-5 gap-5 bg-light-gray border border-gray ">
-            <div class="flex-shrink-0 article-thumimg">
+            <a href="${href}" class="flex-shrink-0 article-thumimg">
                 <img src="${article_cover}"
                     class="img-cover rounded-12px" alt="${article_title}">
-            </div>
+            </a>
             <section class="flex-grow-1 d-flex flex-column ">
                 <article class="article-info">
-                    <h4 class=" text-black article-title">
-                        ${truncate(article_title, 60)}
-                    </h4>
+                <a href="${href}">
+                <h4 class=" text-black article-title">
+                ${truncate(article_title, 60)}
+            </h4>
+                </a>
+                  
                     <p class="article-desc my-3">
                           ${truncate(article_body, 500).replace(
                             /<\/?[^>]+(>|$)/g,
@@ -772,7 +792,7 @@ $(function () {
                     </p>
                 </article>
 
-                <a href="article.html?articleid=${article_id}"
+                <a href="${href}"
                     class="btn btn-primary mt-auto rounded-12px fw-bold w-100 py-2 morebtn">اقرأ
                     المزيد</a>
             </section>
