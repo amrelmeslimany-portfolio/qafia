@@ -1,11 +1,14 @@
 $(function () {
   // Search Box Vars
-  const inputLastLetter = $(".search-box .input-search");
-  const searchBTN = $(".input-group button");
-  const messages = {
-    error: $(".search-error"),
-    success: $(".search-success"),
+  const inputLastLetter = $(".search-box .form-wrap .input-search");
+  const searchTypeSelect = $(".search-box .form-wrap #searchTypeSelect");
+  const searchBTN = $(".search-box .form-wrap .search-btn");
+  const wordLengthInput = $(".search-box .form-wrap .wordCounter");
+  const rangeWordLength = {
+    from: $(".search-box .form-wrap .wordCounter-from"),
+    to: $(".search-box .form-wrap .wordCounter-to"),
   };
+
   // Best word
   const bestwordsContent = $(".bestwords .bestword-content");
   const loader = bestwordsContent.find(".preloader-filter");
@@ -24,10 +27,6 @@ $(function () {
 
   const sideAdv = $(".side-adv");
   const lettersWrap = $(".beforelast-wrod .beforelast-wrod-content");
-  const messagesBeforeLastLetter = {
-    error: $(".letterbefore-error"),
-    success: $(".letterbefore-success"),
-  };
   const bfLLetterLoader = $(".bflastletter-loader");
 
   const arabicLetters = [
@@ -77,20 +76,30 @@ $(function () {
   const bestArticlesWrap = $(".bestArticles ");
   const width3Height = $(".w3h");
 
+  // Toastrs
+  const successToast = {
+    toastClass: "toast bg-success opacity-100 shadow-none",
+    messageClass: "toast-message display-omd",
+  };
+  const errorToast = {
+    toastClass: "toast bg-danger opacity-100 shadow-none",
+    messageClass: "toast-message display-omd",
+  };
+
   // Database Ajax variables
   const ARTICLES_URL = "/qafia/js/libs/articles.json"; // on Github : /qafia/js/libs/articles.json
-  const BackEndURL = "https://jkt3ay.deta.dev/"; // old: https://qafia.deta.dev/
+  const BackEndURL = "https://8qnpet.deta.dev/"; // old: https://qafia.deta.dev/   https://jkt3ay.deta.dev/
 
   // Window resize
   $(window).on("resize", () => {
     // set hieght for adv
-    setADVHeight();
+    // setADVHeight();
     // Set article img cover
     setArticleCoverHeight();
   });
 
   // Set height of adv
-  setADVHeight();
+  // setADVHeight();
   // Set article img cover
   setArticleCoverHeight();
 
@@ -209,38 +218,62 @@ $(function () {
         console.log(error.message);
       });
 
+    // Handle word size inputs change
+    wordSizeInputsHandler();
+
     // When search input last word changing
     searchBTN.click(function (event) {
       event.preventDefault();
+
       let value = inputLastLetter.val().trim();
+      let searchTypeValues = searchTypeSelect.val(); // 1 : normal , 2: advanced
+      let wordSizeValue = Number(wordLengthInput.val());
+      let { from, to } = {
+        from: Number(rangeWordLength.from.val()),
+        to: Number(rangeWordLength.to.val()),
+      };
 
       if (!value) {
         handleMessage("قم بادخال حرف او كلمة");
+      } else if (Number(value)) {
+        handleMessage("قم بادخال حرف او كلمة");
       } else {
         let valueLength = value.length;
-        messages.error.hide();
+        let beforeLastLetter = "";
+        let url;
 
         // if user  enter letter
         if (valueLength == 1) {
-          const url = `${BackEndURL}letter/${handleLetter(value)}`;
-          lastLetterConstant = handleLetter(value);
-          handelGetRequest(url);
+          lastLetterConstant = value;
+          url = `${BackEndURL}search?last=${lastLetterConstant}`;
         } else if (valueLength > 1) {
-          let lastLetter = value.charAt(valueLength - 1);
-          // let beforeLastLetter = value.charAt(valueLength - 2);
-          // const url = `${BackEndURL}search?count=${valueLength}&last=${handleLetter(
-          //   lastLetter
-          // )}&b_last=${handleLetter(beforeLastLetter)}`;
-          const url = `${BackEndURL}search?last=${handleLetter(lastLetter)}`;
-          lastLetterConstant = handleLetter(lastLetter);
-          handelGetRequest(url);
+          lastLetterConstant = value.charAt(valueLength - 1);
+          beforeLastLetter = value.charAt(valueLength - 2);
+
+          // Check search type
+          if (searchTypeValues == "2") {
+            url = `${BackEndURL}search?last=${lastLetterConstant}&b_last=${beforeLastLetter}`;
+          } else {
+            url = `${BackEndURL}search?last=${lastLetterConstant}`;
+          }
         }
-        messagesBeforeLastLetter.error.hide();
+
+        // Check word size and words range
+        if (wordSizeValue) {
+          url += `&size=${wordSizeValue}`;
+        }
+
+        // Check range
+        if (to != 0 && to >= 1) {
+          url += `&min=${from}&max=${to}`;
+        }
+
+        handelGetRequest(url, true);
       }
     });
 
     // Handle Get Request
-    function handelGetRequest(url, messageElement = messages, isInput = true) {
+    function handelGetRequest(url, isInput = true) {
       duringSearching((isLoading = true));
       // GET request
       axios
@@ -259,23 +292,18 @@ $(function () {
             duringSearching((isLoading = false));
             handleResults(results, sliceCounter);
             handleMessage(
-              `تم ايجاد <b>${results.length}</b> كلمة بنجاح`,
-              "success",
-              messageElement
+              `تم ايجاد <b style="font-family:auto" >${results.length}</b> كلمة بنجاح`,
+              "success"
             );
             scrollAfterFinished();
           } else {
             duringSearching((isLoading = false));
-            handleMessage("لايوجد كلمات ", "error", messageElement);
+            handleMessage("لايوجد كلمات ", "error");
           }
         })
         .catch((error) => {
           duringSearching((isLoading = false));
-          handleMessage(
-            "هناك خطأ فى الانترنت او السيرفر",
-            "error",
-            messageElement
-          );
+          handleMessage("هناك خطأ فى الانترنت او السيرفر", "error");
         });
     }
 
@@ -311,18 +339,7 @@ $(function () {
             button.addClass("bg-success");
 
             // Get Request
-
             button.attr("disabled", true);
-            axios
-              .get(`${BackEndURL}copy?ids=${convertedIDs}`)
-              .then(({ data }) => {
-                isCopyBTNClickd = true;
-                button.attr("disabled", false);
-                console.log(data);
-              })
-              .catch((error) => {
-                console.log(error.message);
-              });
 
             // Show successfull message
             setTimeout(() => {
@@ -341,18 +358,12 @@ $(function () {
       let letter = $(this).text().trim();
 
       if (!lastLetterConstant) {
-        handleMessage(
-          "يجب ان تبحث عن أخر حرف (الروي) اولا",
-          "error",
-          messagesBeforeLastLetter
-        );
+        handleMessage("يجب ان تبحث عن أخر حرف (الروي) اولا", "error");
         return;
       } else {
-        const url = `${BackEndURL}search?last=${lastLetterConstant}&b_last=${handleLetter(
-          letter
-        )}`;
+        const url = `${BackEndURL}search?last=${lastLetterConstant}&b_last=${letter}`;
 
-        handelGetRequest(url, messagesBeforeLastLetter, false);
+        handelGetRequest(url, false);
       }
     });
   }
@@ -387,95 +398,100 @@ $(function () {
     if (params.has(wordID) && params.get(wordID) != "NaN") {
       let IDs = data;
 
-      axios.get(`${BackEndURL}meaning?ids=${IDs}`).then(({ data }) => {
-        let result = data.results;
+      axios
+        .get(`${BackEndURL}meaning?words=${IDs}`)
+        .then(({ data }) => {
+          let result = data.results;
 
-        if (typeof result != "string") {
-          if (result.length == 1) {
-            let item = Object.entries(JSON.parse(result[0][1]));
-            let theWord = result[0][0];
+          if (typeof result != "string") {
+            if (result.length == 1) {
+              let item = Object.entries(JSON.parse(result[0]));
 
-            if (item.length == 0) {
-              wordWrapSection.html(
-                `
+              let theWord = IDs;
+
+              if (item.length == 0) {
+                wordWrapSection.html(
+                  `
                 <h2 class="mb-5 text-black bigTitle">معني كلمة <b>${theWord}</b>:</h2>
                 <p>غير متوفر معني لهذة الكلمة</p>
                     `
-              );
-              return;
-            }
+                );
+                return;
+              }
 
-            // Insert Title
-            wordWrapSection.html(
-              `
+              // Insert Title
+              wordWrapSection.html(
+                `
               <h2 class="mb-5 text-black bigTitle">معني كلمة <b>${theWord}</b>:</h2>
               <article class="backlinkswrap">
                   <h4>معني كلمة <b>${theWord}</b> حسب:</h4>
                   <ul class="backlinks">
-  
+
                   </ul>
                   <hr class="mb-4"/>
                   </article>
                   `
-            );
+              );
 
-            for (const [dictionary, themeaning] of item) {
-              let idAttr = createID(dictionary, theWord);
-              let content = "";
+              for (const [dictionary, themeaning] of item) {
+                let idAttr = createID(dictionary, theWord);
+                let content = "";
 
-              themeaning.forEach((mean) => {
-                content += handleMeaningParagraphs(mean);
-              });
+                themeaning.forEach((mean) => {
+                  content += handleMeaningParagraphs(mean);
+                });
 
-              let htmlLinks = `  <li>
+                let htmlLinks = `  <li>
               <a href="#${idAttr}" class="btn-link text-info fw-bold">${dictionary}</a>
               </li>`;
 
-              let articleContent = `
+                let articleContent = `
               <article id="${idAttr}" class="meaning-article">
                                 <h4>${dictionary}</h4>
                                 ${content}
                             </article>`;
 
-              wordWrapSection.find(".backlinks").prepend(htmlLinks);
-              wordWrapSection.find(".backlinkswrap").after(articleContent);
-            }
-          } else if (result.length > 1) {
-            let articleContent = "";
-            let lastIItem = result.length - 1;
-            // Insert Title
-            wordWrapSection.html(
-              `
+                wordWrapSection.find(".backlinks").prepend(htmlLinks);
+                wordWrapSection.find(".backlinkswrap").after(articleContent);
+              }
+            } else if (result.length > 1) {
+              let articleContent = "";
+              let lastIItem = result.length - 1;
+              let wordsArray = IDs.split(" ");
+              // Insert Title
+              wordWrapSection.html(
+                `
               <h2 class="mb-5 text-black bigTitle">معني الكلمات:</h2>
               `
-            );
-            result.forEach((meanItem, index) => {
-              let item = Object.entries(JSON.parse(meanItem[1]));
-              let theWord = `'${meanItem[0]}'`;
-              let content = "";
+              );
 
-              let hr = (last) => {
-                if (last) {
-                  return index == lastIItem ? `<hr class="mb-4"/>` : "";
-                } else {
-                  return index == lastIItem ? "" : `<hr class="mb-4"/>`;
-                }
-              };
+              result.forEach((meanItem, index) => {
+                let item = Object.entries(JSON.parse(meanItem));
+                let theWord = `'${wordsArray[index]}'`;
+                let content = "";
 
-              // Subheader
+                let hr = (last) => {
+                  if (last) {
+                    return index == lastIItem ? `<hr class="mb-4"/>` : "";
+                  } else {
+                    return index == lastIItem ? "" : `<hr class="mb-4"/>`;
+                  }
+                };
 
-              if (item.length == 0) {
-                articleContent += ``;
-                wordWrapSection.append(`
+                // Subheader
+
+                if (item.length == 0) {
+                  articleContent += ``;
+                  wordWrapSection.append(`
                   <article class="backlinkswrap${index}">
                   <h4>معني كلمة <b>${theWord}</b> حسب:</h4>
                   <p>غير متوفر معني لهذة الكلمة</p>
                   ${hr(true)}
                   </article>
             `);
-              } else {
-                articleContent += `<h4 class="mb-4">كلمه ${theWord}:</h4>`;
-                wordWrapSection.append(`
+                } else {
+                  articleContent += `<h4 class="mb-4">كلمه ${theWord}:</h4>`;
+                  wordWrapSection.append(`
                 <article class="backlinkswrap${index}">
                 <h4>معني كلمة <b>${theWord}</b> حسب:</h4>
                 <ul class="backlinks${index}">
@@ -485,39 +501,49 @@ $(function () {
                 </article>
           `);
 
-                for (const [dictionary, themeaning] of item) {
-                  let idAttr = createID(dictionary, theWord);
+                  for (const [dictionary, themeaning] of item) {
+                    let idAttr = createID(dictionary, theWord);
 
-                  themeaning.forEach((mean) => {
-                    content += handleMeaningParagraphs(mean);
-                  });
+                    themeaning.forEach((mean) => {
+                      content += handleMeaningParagraphs(mean);
+                    });
 
-                  let htmlLinks = `<li>
+                    let htmlLinks = `<li>
             <a href="#${idAttr}" class="btn-link text-info fw-bold">${dictionary}</a>
             </li>`;
 
-                  articleContent += `
+                    articleContent += `
                   <article id="${idAttr}" class="meaning-article">
                       <h5 class="fs-21px fw-bold">${dictionary}</h5>
                       ${content}
                   </article>
             `;
 
-                  wordWrapSection.find(`.backlinks${index}`).append(htmlLinks);
+                    wordWrapSection
+                      .find(`.backlinks${index}`)
+                      .append(htmlLinks);
+                  }
+
+                  articleContent += hr(false);
                 }
+              });
 
-                articleContent += hr(false);
-              }
-            });
-
-            $(`.backlinkswrap${lastIItem}`).after(articleContent);
+              $(`.backlinkswrap${lastIItem}`).after(articleContent);
+            }
+          } else {
+            wordWrapSection.html(
+              `<p class="text-center mb-0">من فضلك حدد كلمات <a href="index.html" class="text-info">من هنا</a></p>`
+            );
           }
-        } else {
+        })
+        .catch(() => {
           wordWrapSection.html(
-            `<p class="text-center mb-0">من فضلك حدد كلمات <a href="index.html" class="text-info">من هنا</a></p>`
+            `<p class="text-center mb-0">
+            لا يوجد معني لهذة الكلمة <br>
+            من فضلك حدد كلمات <a href="index.html" class="text-info">من هنا</a>
+            </p>`
           );
-        }
-      });
+        });
     } else {
       wordWrapSection.html(
         `<p class="text-center mb-0">من فضلك حدد كلمات <a href="index.html" class="text-info">من هنا</a></p>`
@@ -526,17 +552,17 @@ $(function () {
   }
 
   // ReUsed Functions
-  function setADVHeight() {
-    // Set Height of adv
-    if ($(".3double-height").length && sideAdv.length) {
-      $(".3double-height").each(function () {
-        let width = $(this).width();
+  // function setADVHeight() {
+  //   // Set Height of adv
+  //   if ($(".3double-height").length && sideAdv.length) {
+  //     $(".3double-height").each(function () {
+  //       let width = $(this).width();
 
-        $(this).height(`${width / 3}px`);
-      });
-      sideAdv.height(`${sideAdv.width() * 2}px`);
-    }
-  }
+  //       $(this).height(`${width / 3}px`);
+  //     });
+  //     sideAdv.height(`${sideAdv.width() * 2}px`);
+  //   }
+  // }
 
   function setArticleCoverHeight() {
     if (width3Height.length) {
@@ -584,28 +610,29 @@ $(function () {
     }
   }
 
-  // Handle Messages (Success , Error)
-  function handleMessage(message, type = "error", element = messages) {
-    if (type == "error") {
-      element.error.html(message);
-      element.error.show();
-      element.success.hide();
-    } else {
-      element.success.html(message);
-      element.success.show();
-      element.error.hide();
-    }
+  // Word size inputs change
+  function wordSizeInputsHandler() {
+    let toInputValue = Number(rangeWordLength.to.val());
+    // Plus 1 on "to word Size"
+    rangeWordLength.to.attr("min", Number(rangeWordLength.from.val()) + 1);
+    rangeWordLength.from.on("change", function () {
+      let value = Number($(this).val());
+
+      if (value == toInputValue || value >= toInputValue) {
+        rangeWordLength.to.attr("min", value + 1);
+        rangeWordLength.to.attr("placeholder", value + 1);
+
+        rangeWordLength.to.val(value + 1);
+      }
+    });
   }
 
-  // Convert Letters
-  function handleLetter(letter) {
-    switch (letter) {
-      case "ا":
-        return "أ";
-      case "ى":
-        return "ي";
-      default:
-        return letter;
+  // Handle Messages (Success , Error)
+  function handleMessage(message, type = "error") {
+    if (type == "error") {
+      toastr.error(message, "", errorToast);
+    } else {
+      toastr.success(message, "", successToast);
     }
   }
 
@@ -667,7 +694,9 @@ $(function () {
   function showRestWordsNumber(length, element) {
     // Show rest of words number
     if (length > 0) {
-      element.html(`<p>متبقي : <b>${length}</b> كلمة</p>`);
+      element.html(
+        `<p>متبقي : <b style="font-family:auto">${length}</b> كلمة</p>`
+      );
     } else if (length == -1) {
       element.html(
         `<p>هذة أخر الكلمات,<br> سيتم التغيير من البداية عند الضغط على زر <b>تغيير الكلمات</b></p>`
@@ -693,20 +722,19 @@ $(function () {
     // When user click on words
     words.each(function () {
       $(this).click(function () {
-        let id = Number($(this).data("id"));
-        let text = $(this).text();
+        // let id = Number($(this).data("id"));
+        let text = $(this).text().trim();
         let smallTag = copyWordsBTN.find("small");
-
         // When user remove select
         if ($(this).hasClass("selected")) {
           $(this).removeClass("selected");
-          selectedIDsWords.delete(id);
+          selectedIDsWords.delete(text);
           copyWords.delete(text);
         }
         // When user select word
         else {
           $(this).addClass("selected");
-          selectedIDsWords.add(id);
+          selectedIDsWords.add(text);
           copyWords.add(text);
         }
 
