@@ -145,6 +145,7 @@ $(function () {
           loader.hide();
           if (article) {
             const { article_title, article_cover, article_body } = article;
+            document.title += ` ${article_title}`;
             articleItemSection.html(`
 
           <h2 class="text-primary">
@@ -163,6 +164,7 @@ $(function () {
         })
         .catch((error) => {
           loader.hide();
+          document.title += ` هناك مشكله ما`;
         });
     }
   }
@@ -394,6 +396,8 @@ $(function () {
     let wordID = "wordid";
     let data = params.get(wordID);
     let wordWrapSection = wordmeaningBox.find(".wrapBox");
+
+    document.title += ` معني ( ${data} )`;
 
     if (params.has(wordID) && params.get(wordID) != "NaN") {
       let IDs = data;

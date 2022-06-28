@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>القافية - معني الكلمة</title>
+    <title>القافية - </title>
     <meta name="description" content="القافية" />
     <meta name="keywords" content="شعر, القافية, اوزان">
     <meta name="theme-color" content="#3F444A">
@@ -58,17 +58,67 @@
 
 
         <div class="container">
-
             <!-- Search -->
-            <section class="search-box mt-5 text-center bg-light-gray border p-5 rounded-12px">
-                <h1 class="text-primary">أكبر قاموس للقوافي في العالم العربي</h1>
+            <section class="search-box mt-5 bg-light-gray border p-5 rounded-12px">
+                <!-- <h1 class="text-primary">أكبر قاموس للقوافي في العالم العربي</h1> -->
 
-                <div class="input-group border rounded-12px mt-6 overflow-hidden bg-white">
-                    <input type="text"
-                        class="form-control form-control-lg bg-transparent rounded-0 border-0 text-primary input-search"
-                        placeholder="أدخل آخر  حرف في القافية (الروي)">
-                    <button class="btn rounded-0"><i class="fas fa-search align-middle text-primary"></i></button>
-                </div>
+                <form class="form-wrap">
+                    <label class="form-label display-xomd mb-3 fw-bold">ضع مثال للقافية او حرف الروي</label>
+                    <div class="d-flex gap-3 flex-column flex-md-row">
+                        <input type="text" class="form-control  text-primary input-search"
+                            placeholder="قلم / علم / هرم... إلخ">
+
+                        <select name="searchType" id="searchTypeSelect" class="form-select text-primary">
+                            <option value="1" selected>بحث عادي</option>
+                            <option value="2">بحث متقدم</option>
+                        </select>
+
+                        <div>
+                            <button type="submit" class="btn btn-dark search-btn"><i
+                                    class="fas fa-search align-middle display-omd py-2"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <hr class="my-6">
+
+
+                    <div
+                        class="d-flex gap-6 justify-content-between flex-wrap align-items-md-center flex-column flex-md-row">
+                        <div class="d-flex align-items-center gap-3 justify-content-between">
+                            <label class="form-label flex-shrink-0 display-omd">
+                                عدد حروف القافية
+                            </label>
+                            <div>
+                                <input type="number" class="form-control text-primary numInput px-1 wordCounter" min="2"
+                                    placeholder="2">
+                            </div>
+                        </div>
+                        <div class="d-flex gap-3 flex-column flex-md-row">
+                            <div class="d-flex align-items-center gap-3 justify-content-between">
+                                <label class="form-label flex-shrink-0 display-omd">
+                                    عدد حروف من
+                                </label>
+                                <div>
+                                    <input type="number"
+                                        class="form-control text-primary numInput px-1 wordCounter-from" min="0"
+                                        placeholder="0">
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-3 justify-content-between">
+                                <label class="form-label flex-shrink-0 display-omd">
+                                    إلي
+                                </label>
+                                <div>
+                                    <input type="number" class="form-control text-primary numInput px-1 wordCounter-to"
+                                        min="1" placeholder="1">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </form>
+
             </section>
 
             <!-- Advertismenet -->
@@ -126,7 +176,8 @@
                 </div>
 
                 <div class="row g-5">
-                    <div class="col-lg-8">
+                    <div class="col-lg ">
+
                         <!-- Send Comment -->
                         <div class="comment-wrap bg-light-gray rounded-12px  overflow-hidden">
                             <article class="comment-header text-dark p-5  d-flex gap-3 align-items-center">
@@ -193,6 +244,12 @@
                                 </li>
                             </ul>
                         </div>
+                    </div>
+
+
+                    <div class="col-lg-auto m-0 d-lg-flex d-none">
+                        <!-- Adv -->
+                        <div class="w-400"></div>
                     </div>
                 </div>
             </main>
