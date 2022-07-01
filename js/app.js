@@ -289,6 +289,8 @@ $(function () {
       };
 
       searchHandler(value, wordSizeValue, searchTypeValues, from, to);
+
+      // Clear Inputs
     });
 
     // Handle Get Request
@@ -313,6 +315,13 @@ $(function () {
               "success"
             );
             scrollAfterFinished();
+
+            // Clear numbers
+            wordLengthInput.val("");
+            rangeWordLength.from.val("");
+            rangeWordLength.to.val("");
+            rangeWordLength.to.attr("min", 1);
+            rangeWordLength.to.attr("placeholder", 1);
           } else {
             duringSearching((isLoading = false));
             handleMessage("لايوجد كلمات ", "error");
