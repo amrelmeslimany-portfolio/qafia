@@ -8,6 +8,7 @@ $(function () {
     from: $(".search-box .form-wrap .wordCounter-from"),
     to: $(".search-box .form-wrap .wordCounter-to"),
   };
+  const searchNotHome = $(".redirect-to-home");
 
   // Best word
   const bestwordsContent = $(".bestwords .bestword-content");
@@ -197,31 +198,82 @@ $(function () {
       old: 0,
       new: 42,
     };
+    let Global_Inputs = {
+      wordsize: 0,
+      isAdvancedSearch: false,
+    };
 
-    // Default Words
-    duringSearching((isLoading = true));
-    axios
-      .get(`${BackEndURL}mostliked`)
-      .then(({ data }) => {
-        results = data.results;
+    const searchParams = new URLSearchParams(location.search);
 
-        if (results.length) {
-          // init
-          initActions();
+    // If user searchen in another pages not home
+    if (searchParams.has("letter")) {
+      let [
+        letterParam,
+        searchtypeParam,
+        wordsizeParam,
+        sizeminParam,
+        sizemaxParam,
+      ] = searchParams.values();
+
+      inputLastLetter.val(letterParam);
+
+      if (searchtypeParam == "2") {
+        Global_Inputs.isAdvancedSearch = true;
+        lettersWrap.find(".letter-badge").addClass("opacity-50");
+        searchTypeSelect.val("2");
+      }
+
+      // Lunch Search
+      searchHandler(
+        letterParam,
+        Number(wordsizeParam),
+        Number(searchtypeParam),
+        Number(sizeminParam),
+        Number(sizemaxParam)
+      );
+    } else {
+      // Default Words
+      duringSearching((isLoading = true));
+      axios
+        .get(`${BackEndURL}mostliked`)
+        .then(({ data }) => {
+          results = data.results;
+
+          if (results.length) {
+            // init
+            initActions();
+            duringSearching((isLoading = false));
+            handleResults(results, sliceCounter);
+          } else {
+            duringSearching((isLoading = false));
+            console.log("لايوجد كلمات");
+          }
+        })
+        .catch((error) => {
           duringSearching((isLoading = false));
-          handleResults(results, sliceCounter);
-        } else {
-          duringSearching((isLoading = false));
-          console.log("لايوجد كلمات");
-        }
-      })
-      .catch((error) => {
-        duringSearching((isLoading = false));
-        console.log(error.message);
-      });
+          console.log(error.message);
+        });
+    }
 
     // Handle word size inputs change
     wordSizeInputsHandler();
+
+    // When search type sekect change
+    searchTypeSelect.on("change", function () {
+      let value = $(this).val();
+
+      if (value == "2") {
+        // Disable the input when search
+        Global_Inputs.isAdvancedSearch = true;
+        Global_Inputs.wordsize = 0;
+        lettersWrap.find(".letter-badge").addClass("opacity-50");
+        disableWordSizeInputs();
+      } else {
+        lettersWrap.find(".letter-badge").removeClass("opacity-50");
+        Global_Inputs.isAdvancedSearch = false;
+        disableWordSizeInputs(false);
+      }
+    });
 
     // When search input last word changing
     searchBTN.click(function (event) {
@@ -230,11 +282,50 @@ $(function () {
       let value = inputLastLetter.val().trim();
       let searchTypeValues = searchTypeSelect.val(); // 1 : normal , 2: advanced
       let wordSizeValue = Number(wordLengthInput.val());
+
       let { from, to } = {
         from: Number(rangeWordLength.from.val()),
         to: Number(rangeWordLength.to.val()),
       };
 
+      searchHandler(value, wordSizeValue, searchTypeValues, from, to);
+    });
+
+    // Handle Get Request
+    function handelGetRequest(url) {
+      duringSearching((isLoading = true));
+      // GET request
+      axios
+        .get(url)
+        .then(({ data }) => {
+          results = data.results;
+
+          if (results.length) {
+            // init
+            initActions();
+            // init slice counter
+            sliceCounter.old = 0;
+            sliceCounter.new = 42;
+            duringSearching((isLoading = false));
+            handleResults(results, sliceCounter);
+            handleMessage(
+              `تم ايجاد <b style="font-family:auto" >${results.length}</b> كلمة بنجاح`,
+              "success"
+            );
+            scrollAfterFinished();
+          } else {
+            duringSearching((isLoading = false));
+            handleMessage("لايوجد كلمات ", "error");
+          }
+        })
+        .catch((error) => {
+          duringSearching((isLoading = false));
+          handleMessage("هناك خطأ فى الانترنت او السيرفر", "error");
+        });
+    }
+
+    // Search handler
+    function searchHandler(value, wordSizeValue, searchTypeValues, from, to) {
       if (!value) {
         handleMessage("قم بادخال حرف او كلمة");
       } else if (Number(value)) {
@@ -261,52 +352,20 @@ $(function () {
         }
 
         // Check word size and words range
-        if (wordSizeValue) {
+        if (wordSizeValue >= 2 && searchTypeValues == "1") {
           url += `&size=${wordSizeValue}`;
+          Global_Inputs.wordsize = wordSizeValue;
+        } else {
+          Global_Inputs.wordsize = 0;
         }
 
         // Check range
-        if (to != 0 && to >= 1) {
+        if (to != 0 && to >= 1 && to > from && searchTypeValues == "1") {
           url += `&min=${from}&max=${to}`;
         }
 
-        handelGetRequest(url, true);
+        handelGetRequest(url);
       }
-    });
-
-    // Handle Get Request
-    function handelGetRequest(url, isInput = true) {
-      duringSearching((isLoading = true));
-      // GET request
-      axios
-        .get(url)
-        .then(({ data }) => {
-          results = data.results;
-
-          if (results.length) {
-            // init
-            initActions();
-
-            isInput && inputLastLetter.val("");
-            // init slice counter
-            sliceCounter.old = 0;
-            sliceCounter.new = 42;
-            duringSearching((isLoading = false));
-            handleResults(results, sliceCounter);
-            handleMessage(
-              `تم ايجاد <b style="font-family:auto" >${results.length}</b> كلمة بنجاح`,
-              "success"
-            );
-            scrollAfterFinished();
-          } else {
-            duringSearching((isLoading = false));
-            handleMessage("لايوجد كلمات ", "error");
-          }
-        })
-        .catch((error) => {
-          duringSearching((isLoading = false));
-          handleMessage("هناك خطأ فى الانترنت او السيرفر", "error");
-        });
     }
 
     // When user Click "تغيير الكلمات"
@@ -359,13 +418,61 @@ $(function () {
     $(".letter-badge").click(function () {
       let letter = $(this).text().trim();
 
-      if (!lastLetterConstant) {
+      if (Global_Inputs.isAdvancedSearch) {
+        handleMessage("لا يمكن استخدام هذة الاحرف مع البحث المتقدم", "error");
+        return;
+      } else if (!lastLetterConstant) {
         handleMessage("يجب ان تبحث عن أخر حرف (الروي) اولا", "error");
         return;
       } else {
-        const url = `${BackEndURL}search?last=${lastLetterConstant}&b_last=${letter}`;
+        let url = `${BackEndURL}search?last=${lastLetterConstant}&b_last=${letter}`;
+        if (Global_Inputs.wordsize != 0) {
+          url += `&size=${Global_Inputs.wordsize}`;
+        }
 
-        handelGetRequest(url, false);
+        handelGetRequest(url);
+      }
+    });
+  }
+
+  // Send Searh data not in home to home page
+  if (searchNotHome.length) {
+    let searchData = {
+      letter: "",
+      type: "1",
+      wordsize: 0,
+      sizemin: 0,
+      sizemax: 0,
+    };
+    wordSizeInputsHandler();
+    // When search type change
+    searchTypeSelect.on("change", function () {
+      let searchType = $(this).val();
+      searchData = { ...searchData, type: searchType };
+      searchType == "2"
+        ? disableWordSizeInputs()
+        : disableWordSizeInputs(false);
+    });
+    searchBTN.click(function (e) {
+      e.preventDefault();
+      let letter = inputLastLetter.val().trim();
+
+      if (!letter) {
+        handleMessage("قم بادخال حرف او كلمة");
+      } else if (Number(letter)) {
+        handleMessage("قم بادخال حرف او كلمة");
+      } else {
+        let sentData = `?`;
+        let index = 0;
+        searchData = { ...searchData, letter };
+        for (const [key, value] of Object.entries(searchData)) {
+          index += 1;
+          index != Object.entries(searchData).length
+            ? (sentData += `${key}=${value}&`)
+            : (sentData += `${key}=${value}`);
+        }
+
+        location.replace(`index.html${sentData}`);
       }
     });
   }
@@ -629,6 +736,13 @@ $(function () {
         rangeWordLength.to.val(value + 1);
       }
     });
+  }
+
+  // Disable inputs reused function
+  function disableWordSizeInputs(state = true) {
+    wordLengthInput.attr("disabled", state);
+    rangeWordLength.from.attr("disabled", state);
+    rangeWordLength.to.attr("disabled", state);
   }
 
   // Handle Messages (Success , Error)
