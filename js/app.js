@@ -924,7 +924,7 @@ $(function () {
   function articleItemHTML({
     article_id,
     article_title,
-    article_cover,
+    article_thumbnail,
     article_body,
   }) {
     let href = `article.html?articleid=${article_id}`;
@@ -934,8 +934,8 @@ $(function () {
         <div
             class="article-wraper d-flex rounded-12px p-5 gap-5 bg-light-gray border border-gray ">
             <a href="${href}" class="flex-shrink-0 article-thumimg">
-                <img src="${article_cover}"
-                    class="img-cover rounded-12px" alt="${article_title}">
+                <img src="${article_thumbnail}"
+                    class=" rounded-12px" alt="${article_title}">
             </a>
             <section class="flex-grow-1 d-flex flex-column ">
                 <article class="article-info">
