@@ -77,6 +77,13 @@ $(function () {
   const bestArticlesWrap = $(".bestArticles ");
   const width3Height = $(".w3h");
 
+  // Comments section
+  const addCommentForm = $(".addcommentform");
+  const commentsList = $(".comments-list");
+
+  // Add Qafia
+  const addQafiaContent = $(".addword-content");
+
   // Toastrs
   const successToast = {
     toastClass: "toast bg-success opacity-100 shadow-none",
@@ -89,7 +96,10 @@ $(function () {
 
   // Database Ajax variables
   const ARTICLES_URL = "/qafia/js/libs/articles.json"; // on Github : /qafia/js/libs/articles.json
-  const BackEndURL = "https://8qnpet.deta.dev/"; // old: https://qafia.deta.dev/   https://jkt3ay.deta.dev/
+  const BackEndURL = "https://8qnpet.deta.dev/";
+  // old: https://fd7f-41-236-199-49.eu.ngrok.io/
+  // OLD : https://8qnpet.deta.dev/
+  // old: https://qafia.deta.dev/   https://jkt3ay.deta.dev/
 
   // Window resize
   $(window).on("resize", () => {
@@ -247,11 +257,17 @@ $(function () {
           } else {
             duringSearching((isLoading = false));
             console.log("لايوجد كلمات");
+            bestwordsContent.prepend(
+              `<h5 class="text-center">لايوجد كلمات</h5>`
+            );
           }
         })
         .catch((error) => {
           duringSearching((isLoading = false));
           console.log(error.message);
+          bestwordsContent.prepend(
+            `<h5 class="text-center">هناك مشكله فى الانترنت او السيرفر</h5>`
+          );
         });
     }
 
@@ -353,25 +369,28 @@ $(function () {
           beforeLastLetter = value.charAt(valueLength - 2);
 
           // Check search type
-          if (searchTypeValues == "2") {
-            url = `${BackEndURL}search?last=${lastLetterConstant}&b_last=${beforeLastLetter}`;
-          } else {
-            url = `${BackEndURL}search?last=${lastLetterConstant}`;
-          }
+          // if (searchTypeValues == "2") {
+          //   url = `${BackEndURL}search?last=${lastLetterConstant}&b_last=${beforeLastLetter}`;
+          // } else {
+          //   url = `${BackEndURL}search?last=${lastLetterConstant}`;
+          // }
+
+          // Search by word
+          url = `${BackEndURL}search_word?word=${value.trim()}`;
         }
 
         // Check word size and words range
         if (wordSizeValue >= 2 && searchTypeValues == "1") {
-          url += `&size=${wordSizeValue}`;
+          // url += `&size=${wordSizeValue}`;
           Global_Inputs.wordsize = wordSizeValue;
         } else {
           Global_Inputs.wordsize = 0;
         }
 
         // Check range
-        if (to != 0 && to >= 1 && to > from && searchTypeValues == "1") {
-          url += `&min=${from}&max=${to}`;
-        }
+        // if (to != 0 && to >= 1 && to > from && searchTypeValues == "1") {
+        //   url += `&min=${from}&max=${to}`;
+        // }
 
         handelGetRequest(url);
       }
@@ -671,6 +690,239 @@ $(function () {
     }
   }
 
+  // Add qafia and its meaning
+  if (addQafiaContent.length) {
+    const addQafiaForm = addQafiaContent.find("#addqafia-form");
+    const addQafiaInput = addQafiaContent.find(".input-addword");
+    const addQafiaMeaningInput = addQafiaContent.find("#addmeaninginput");
+    const qafiaLoader = addQafiaContent.find(".formqafia-loader");
+
+    qafiaLoader.hide();
+
+    addQafiaMeaningInput.on("input", function (e) {
+      let meaning = $(this).val().trim();
+      let maxSize = 120;
+
+      if (meaning.length > maxSize) {
+        let restSize = maxSize - meaning.length;
+        handleMessage("يجب ان تقل الحروف عن " + maxSize + " حرف للمعني");
+        $(this).blur();
+        restSize < 0 && $(this).val(meaning.slice(0, restSize));
+        return false;
+      }
+    });
+
+    addQafiaForm.on("submit", function (e) {
+      e.preventDefault();
+      let qafiaValue = addQafiaInput.val().trim();
+      let qafiameanValue = addQafiaMeaningInput.val().trim();
+
+      if (!qafiaValue) {
+        handleMessage("يجب ان تدخل قافية");
+        return;
+      }
+      if (qafiaValue.length < 2) {
+        handleMessage("يجب ان تكون احرف القافية اكثر من 2");
+        return;
+      }
+      if (qafiameanValue.length < 6 && Boolean(qafiameanValue)) {
+        handleMessage("يجب ان تكون احرف معاني القافية اكثر من 6");
+        return;
+      }
+
+      if (Number(qafiaValue)) {
+        handleMessage("يجب ان تكون القافية احرف وليس ارقام");
+        return;
+      }
+      if (Number(qafiameanValue)) {
+        handleMessage("يجب ان يكون المعني احرف وليس ارقام");
+        return;
+      }
+
+      // post request
+      let URL = `${BackEndURL}add_qafia?qafia=${qafiaValue}`;
+
+      if (Boolean(qafiameanValue)) {
+        URL += `&meaning=${qafiameanValue}`;
+      }
+
+      console.log(URL);
+
+      qafiaLoader.show();
+      axios
+        .post(URL)
+        .then((result) => {
+          console.log(result);
+          qafiaLoader.hide();
+          handleMessage("تم ارسال القافية بنجاح", "success");
+        })
+        .catch((error) => {
+          console.log("error");
+          console.log(error);
+          handleMessage("هناك مشكلة ما فى الانترنت او السيرفر");
+          qafiaLoader.hide();
+        });
+    });
+  }
+
+  // Comments Section
+  // Comment Form
+  if (addCommentForm.length) {
+    const usernameInput = $("#username_comment");
+    const commentBodyInput = $("#commentbody_comment");
+    const formLoader = $(".formcomment-loader");
+
+    formLoader.hide();
+    addCommentForm.on("submit", function (event) {
+      event.preventDefault();
+      let data = {
+        username: usernameInput.val().trim(),
+        comment: commentBodyInput.val().trim(),
+      };
+
+      // Some Checks
+      if (!data.comment) {
+        handleMessage("يجب ادخال التعليق");
+        return;
+      }
+      if (Number(data.username)) {
+        handleMessage("لايجب ان يكون الاسم ارقام فقط");
+        return;
+      }
+
+      if (data.username.length <= 2 && Boolean(data.username)) {
+        handleMessage("يجب ان يكون الاسم اكثر من حرفين");
+        return;
+      }
+
+      if (Number(data.comment)) {
+        handleMessage("لايجب ان يكون التعليق ارقام فقط");
+        return;
+      }
+      if (data.comment.length < 6) {
+        handleMessage("يجب ان يكون التعليق اكثر من 6 احرف");
+        return;
+      }
+
+      // Here make post request
+
+      const URL = `${BackEndURL}comment?comment=${data.comment}&user=${
+        Boolean(data.username) ? data.username : "اسم المستخدم"
+      }`;
+
+      formLoader.show();
+      axios
+        .post(URL)
+        .then(({ data }) => {
+          let result = data.results;
+          if (result === "accepted") {
+            handleMessage("تم إضافة التعليق بنجاح", "success");
+            usernameInput.val("");
+            commentBodyInput.val("");
+            formLoader.hide();
+            isNewComment = true;
+          } else {
+            formLoader.hide();
+            handleMessage("حدثت مشكله ما فى اضافة التعليق");
+          }
+        })
+        .catch((error) => {
+          formLoader.hide();
+          handleMessage("حدثت مشكله ما فى اضافة التعليق");
+          console.log(error);
+        });
+    });
+  }
+  // Comments list
+  if (commentsList.length) {
+    // Default get comments
+    const seemoreBTN = $(".seemorecomment-btn");
+    const seemoreBTNLoader = seemoreBTN.find(".fa-spinner");
+    const URL = `${BackEndURL}comments?section=global`;
+
+    axios
+      .get(URL)
+      .then(({ data }) => {
+        let comments = data.results;
+        let commentsLength = comments.length;
+
+        handleCommentLoaders();
+
+        // Check there are comments ?
+        if (commentsLength) {
+          if (commentsLength == 1) {
+            commentsList.prepend(commentItemHTML(comments[0]));
+            seemoreBTN.hide();
+          } else {
+            let slicedComments = [];
+            let sliceCommentNumber = {
+              min: 0,
+              max: 3,
+            };
+            slicedComments = comments.slice(
+              sliceCommentNumber.min,
+              sliceCommentNumber.max
+            );
+
+            insertComments(slicedComments);
+
+            // When user click seemore comments
+            if (sliceCommentNumber.max >= commentsLength) {
+              seemoreBTN.hide();
+            } else {
+              seemoreBTN.find("button").click(function () {
+                $(this).attr("disabled", true);
+                seemoreBTNLoader.show();
+
+                sliceCommentNumber.min += 3;
+                sliceCommentNumber.max += 3;
+
+                if (sliceCommentNumber.max >= commentsLength) {
+                  sliceCommentNumber.max = commentsLength;
+                  seemoreBTN.hide();
+                }
+
+                slicedComments = comments.slice(
+                  sliceCommentNumber.min,
+                  sliceCommentNumber.max
+                );
+                console.log(slicedComments);
+                insertComments(slicedComments);
+                $(this).attr("disabled", false);
+                seemoreBTNLoader.hide();
+              });
+            }
+          }
+        } else {
+          seemoreBTN.hide();
+          commentsList.prepend(
+            `<li class="text-center"><h5>لا يوجد تعليقات</h5></li>`
+          );
+        }
+      })
+      .catch((error) => {
+        console.log(error);
+        seemoreBTN.hide();
+        commentsList.prepend(
+          `<li class="text-center"><h5>هناك مشكله ما فى الانترنت او السيرفر</h5></li>`
+        );
+      });
+
+    function handleCommentLoaders(state = "hide") {
+      if (state == "hide") {
+        seemoreBTNLoader.hide();
+      } else {
+        seemoreBTNLoader.show();
+      }
+    }
+
+    function insertComments(comments) {
+      comments.forEach((comment) =>
+        commentsList.append(commentItemHTML(comment))
+      );
+    }
+  }
+
   // ReUsed Functions
   // function setADVHeight() {
   //   // Set Height of adv
@@ -961,6 +1213,23 @@ $(function () {
     </li>
     
     
+    `;
+  }
+
+  // Comment Item
+  function commentItemHTML(comment) {
+    return `
+    <li class="comment-item d-flex gap-3 flex-xx-row flex-column" data-commentid="${comment[0]}">
+      <div class="flex-shrink-0">
+        <img src="../assets/img/icons/user.svg" width="75" alt="${comment[1]}">
+      </div>
+      <article class="flex-grow-1 bg-white p-3 rounded-12px">
+        <h5 class="text-primary fw-bold mb-0">${comment[1]}</h5>
+        <p class="mb-0 display-omd mt-2">
+        ${comment[2]}
+        </p>
+      </article>
+    </li>
     `;
   }
 });
