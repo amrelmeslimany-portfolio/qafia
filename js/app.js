@@ -746,8 +746,6 @@ $(function () {
         URL += `&meaning=${qafiameanValue}`;
       }
 
-      console.log(URL);
-
       qafiaLoader.show();
       axios
         .post(URL)
