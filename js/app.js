@@ -369,32 +369,25 @@ $(function () {
           beforeLastLetter = value.charAt(valueLength - 2);
 
           // Check search type
-          // if (searchTypeValues == "2") {
-          //   url = `${BackEndURL}search?last=${lastLetterConstant}&b_last=${beforeLastLetter}`;
-          // } else {
-          //   url = `${BackEndURL}search?last=${lastLetterConstant}`;
-          // }
-
-          // Search by word
-          url = `${BackEndURL}search_word?word=${value.trim()}`;
+          if (searchTypeValues == "2") {
+            // url = `${BackEndURL}search?last=${lastLetterConstant}&b_last=${beforeLastLetter}`;
+            // Search by word
+            url = `${BackEndURL}search_word?word=${value.trim()}`;
+          } else {
+            url = `${BackEndURL}search?last=${lastLetterConstant}`;
+          }
         }
 
         // Check word size and words range
         if (wordSizeValue >= 2 && searchTypeValues == "1") {
-          valueLength == 1 && (url += `&size=${wordSizeValue}`);
+          url += `&size=${wordSizeValue}`;
           Global_Inputs.wordsize = wordSizeValue;
         } else {
           Global_Inputs.wordsize = 0;
         }
 
         // Check range
-        if (
-          to != 0 &&
-          to >= 1 &&
-          to > from &&
-          searchTypeValues == "1" &&
-          valueLength == 1
-        ) {
+        if (to != 0 && to >= 1 && to > from && searchTypeValues == "1") {
           url += `&min=${from}&max=${to}`;
         }
 
