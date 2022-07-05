@@ -95,7 +95,7 @@ $(function () {
   };
 
   // Database Ajax variables
-  const ARTICLES_URL = "/qafia/js/libs/articles.json"; // on Github : /qafia/js/libs/articles.json
+  const ARTICLES_URL = "/js/libs/articles.json"; // on Github : /qafia/js/libs/articles.json
   const BackEndURL = "https://8qnpet.deta.dev/";
   // old: https://fd7f-41-236-199-49.eu.ngrok.io/
   // OLD : https://8qnpet.deta.dev/
@@ -381,16 +381,24 @@ $(function () {
 
         // Check word size and words range
         if (wordSizeValue >= 2 && searchTypeValues == "1") {
-          // url += `&size=${wordSizeValue}`;
+          valueLength == 1 && (url += `&size=${wordSizeValue}`);
           Global_Inputs.wordsize = wordSizeValue;
         } else {
           Global_Inputs.wordsize = 0;
         }
 
         // Check range
-        // if (to != 0 && to >= 1 && to > from && searchTypeValues == "1") {
-        //   url += `&min=${from}&max=${to}`;
-        // }
+        if (
+          to != 0 &&
+          to >= 1 &&
+          to > from &&
+          searchTypeValues == "1" &&
+          valueLength == 1
+        ) {
+          url += `&min=${from}&max=${to}`;
+        }
+
+        console.log(url);
 
         handelGetRequest(url);
       }
@@ -488,10 +496,15 @@ $(function () {
       if (!letter) {
         handleMessage("قم بادخال حرف او كلمة");
       } else if (Number(letter)) {
-        handleMessage("قم بادخال حرف او كلمة");
+        handleMessage("قم بادخال احرف او كلمه فقط");
       } else {
         let sentData = `?`;
         let index = 0;
+
+        searchData.wordsize = Number(wordLengthInput.val());
+        searchData.sizemin = Number(rangeWordLength.from.val());
+        searchData.sizemax = Number(rangeWordLength.to.val());
+
         searchData = { ...searchData, letter };
         for (const [key, value] of Object.entries(searchData)) {
           index += 1;
